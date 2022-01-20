@@ -21,4 +21,5 @@ from core.views import AutoAPIView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(AutoAPIView().urls)),
+    path('api/', include('rest_framework.urls')),
 ]

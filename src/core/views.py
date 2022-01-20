@@ -7,6 +7,20 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.serializers import ModelSerializer
 
+VIEWSET_OPTIONS = [
+    'pagination_class',
+    'filterset_fields',
+    'search_fields',
+    'ordering_fields',
+    'permission_classes',
+]
+
+SERIALIZER_OPTIONS = [
+    'model',
+    'fields',
+    'depth',
+]
+
 
 class AutoAPIView:
 
@@ -24,19 +38,29 @@ class AutoAPIView:
         return meta.model_name.title()
 
     def get_API_options(self, model):
-        default_options = dict(model=model, fields='__all__')
-
+        default_options = {
+            'model': model,
+            'fields': '__all__',
+        }
         API = getattr(model, 'API', None)
         options = getattr(API, '__dict__', {})
 
         return {**default_options, **options}
+
+    def get_serializer_options(self, model):
+        options = self.get_API_options(model)
+        return {k: v for k, v in options.items() if k in SERIALIZER_OPTIONS}
+
+    def get_viewset_options(self, model):
+        options = self.get_API_options(model)
+        return {k: v for k, v in options.items() if k in VIEWSET_OPTIONS}
 
     def get_serializer_meta_class(self, model):
 
         return type(
             'DefaultMeta',
             (),
-            self.get_API_options(model),
+            self.get_serializer_options(model),
         )
 
     def get_serializer_class(self, model):
@@ -48,13 +72,14 @@ class AutoAPIView:
         )
 
     def get_viewset(self, model):
-
         return type(
             f'{self.get_class_name(model)}ViewSet',
             (ModelViewSet,),
             dict(
                 queryset=model.objects.all(),
                 serializer_class=self.get_serializer_class(model),
+                ordering_fields=[],
+                **self.get_viewset_options(model)
             ),
         )
 

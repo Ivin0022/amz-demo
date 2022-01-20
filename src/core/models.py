@@ -13,8 +13,9 @@ class Question(models.Model):
         verbose_name = 'Question'
         verbose_name_plural = 'Questions'
 
-    class API:
-        fields = ('title', )
+    # class API:
+    # fields = ('title',)
+    # search_fields = ('title',)
 
     def __str__(self):
         """Unicode representation of Questions."""
