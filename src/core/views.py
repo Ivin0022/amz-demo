@@ -40,19 +40,18 @@ class AutoAPIView:
 
         return type(
             f'{self.get_class_name(model)}Serializer',
-            (ModelSerializer, ),
-            dict(Meta=self.get_serializer_meta_class(model), ),
+            (ModelSerializer,),
+            dict(Meta=self.get_serializer_meta_class(model),),
         )
 
     def get_viewset(self, model):
-        serializer_class = self.get_serializer_class(model)
 
         return type(
             f'{self.get_class_name(model)}ViewSet',
-            (ModelViewSet, ),
+            (ModelViewSet,),
             dict(
                 queryset=model.objects.all(),
-                serializer_class=serializer_class,
+                serializer_class=self.get_serializer_class(model),
             ),
         )
 
