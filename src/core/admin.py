@@ -55,8 +55,6 @@ class AdminModel:
             field.name for field in self.meta.local_many_to_many
         ]
 
-        print(self.model.__name__, list_display)
-
         return type(
             '%sAdmin' % self.model.__name__,
             (admin.ModelAdmin, ),
@@ -72,10 +70,26 @@ class AdminModel:
 class AutoAdminMaker:
 
     def register(self, model):
-        if admin.site.is_registered(model):
-            return
-
         admin_class = AdminModel(model).make()
+
+        if admin.site.is_registered(model):
+            old_admin_class = admin.site._registry[model].__class__
+
+            try:
+                admin_class = type(
+                    old_admin_class.__name__,
+                    (old_admin_class, admin_class),
+                    {},
+                )
+            except TypeError:
+                admin_class = type(
+                    old_admin_class.__name__,
+                    (admin_class, old_admin_class),
+                    {},
+                )
+
+            admin.site.unregister(model)
+
         admin.site.register(model, admin_class)
 
     def __call__(self, *args, **kwds):
