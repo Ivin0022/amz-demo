@@ -23,17 +23,20 @@ class AutoAPIView:
         meta: Options = model._meta
         return meta.model_name.title()
 
-    def get_serializer_meta_class(self, model):
-        API = getattr(model, 'API', None)
-        config = getattr(API, '__dict__', {})
+    def get_API_options(self, model):
+        default_options = dict(model=model, fields='__all__')
 
-        meta_dict = dict(model=model, fields='__all__')
-        meta_dict.update(config)
+        API = getattr(model, 'API', None)
+        options = getattr(API, '__dict__', {})
+
+        return {**default_options, **options}
+
+    def get_serializer_meta_class(self, model):
 
         return type(
             'DefaultMeta',
             (),
-            meta_dict,
+            self.get_API_options(model),
         )
 
     def get_serializer_class(self, model):
