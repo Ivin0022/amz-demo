@@ -23,19 +23,31 @@ class AutoAPIView:
         meta: Options = model._meta
         return meta.model_name.title()
 
-    def get_viewset(self, model):
+    def get_serializer_meta_class(self, model):
+        API = getattr(model, 'API', None)
+        config = getattr(API, '__dict__', {})
 
-        class Meta:
-            model = self.models[0]
-            fields = '__all__'
+        meta_dict = dict(model=model, fields='__all__')
+        meta_dict.update(config)
 
-        serializer_class = type(
-            f'{self.get_class_name(model)}Serializer',
-            (ModelSerializer, ),
-            dict(Meta=Meta, ),
+        return type(
+            'DefaultMeta',
+            (),
+            meta_dict,
         )
 
-        viewset = type(
+    def get_serializer_class(self, model):
+
+        return type(
+            f'{self.get_class_name(model)}Serializer',
+            (ModelSerializer, ),
+            dict(Meta=self.get_serializer_meta_class(model), ),
+        )
+
+    def get_viewset(self, model):
+        serializer_class = self.get_serializer_class(model)
+
+        return type(
             f'{self.get_class_name(model)}ViewSet',
             (ModelViewSet, ),
             dict(
@@ -43,8 +55,6 @@ class AutoAPIView:
                 serializer_class=serializer_class,
             ),
         )
-
-        return viewset
 
     @property
     def urls(self):
