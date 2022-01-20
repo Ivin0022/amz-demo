@@ -17,20 +17,38 @@ class AutoAPIView:
     def get_api_name(self, model):
         meta: Options = model._meta
         name: str = meta.verbose_name_plural
-        return name.replace(' ', '/')
+        return name.lower().replace(' ', '/')
+
+    def get_class_name(self, model):
+        meta: Options = model._meta
+        return meta.model_name.title()
+
+    def get_viewset(self, model):
+
+        class Meta:
+            model = self.models[0]
+            fields = '__all__'
+
+        serializer_class = type(
+            f'{self.get_class_name(model)}Serializer',
+            (ModelSerializer, ),
+            dict(Meta=Meta, ),
+        )
+
+        viewset = type(
+            f'{self.get_class_name(model)}ViewSet',
+            (ModelViewSet, ),
+            dict(
+                queryset=model.objects.all(),
+                serializer_class=serializer_class,
+            ),
+        )
+
+        return viewset
 
     @property
     def urls(self):
-
-        class s(ModelSerializer):
-
-            class Meta:
-                model = self.models[0]
-                fields = '__all__'
-
-        class a(ModelViewSet):
-            queryset = self.models[0].objects.all()
-            serializer_class = s
-
-        self.router.register(self.get_api_name(self.models[0]), a)
+        for model in self.models:
+            viewset = self.get_viewset(model)
+            self.router.register(self.get_api_name(model), viewset)
         return self.router.urls
