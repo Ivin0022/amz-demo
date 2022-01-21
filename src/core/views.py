@@ -1,3 +1,7 @@
+# builtins
+from dataclasses import asdict, dataclass
+from typing import Union
+
 # django
 from django.apps import apps
 from django.db.models.options import Options
@@ -21,19 +25,20 @@ VIEWSET_OPTIONS = [
     'get_serializer_class',
 ]
 
-SERIALIZER_OPTIONS = [
-    'model',
-    'fields',
-    'read_only_fields',
-    'depth',
-]
+
+@dataclass
+class BaseOptions:
+    model: models.Model
+
+    def to_dict(self, opts: dict) -> dict:
+        return {k: opts.get(k) or v for k, v in asdict(self).items()}
 
 
-class SerializerOpitons:
-
-    def __init__(self, model) -> None:
-        self.model = model
-        self.fields = '__all__'
+@dataclass
+class SerializerOpitons(BaseOptions):
+    fields: Union[str, list, tuple] = '__all__'
+    read_only_fields: Union[list, tuple] = None
+    depth: int = None
 
 
 class ViewSetOpitons:
@@ -84,13 +89,7 @@ class ModelAPI:
         self.model_name: str = self.meta.model_name.title()
         self.API = getattr(self.model, 'API', None)
         self.options: dict = getattr(self.API, '__dict__', {})
-
-    def get_serializer_options(self):
-
-        default_options = SerializerOpitons(self.model)
-        default_options = {k: getattr(default_options, k) for k in SERIALIZER_OPTIONS if hasattr(default_options, k)}
-
-        return {**default_options, **self.options}
+        self.serializer_options = SerializerOpitons(self.model).to_dict(self.options)
 
     def get_viewset_options(self):
 
@@ -100,11 +99,10 @@ class ModelAPI:
         return {**default_options, **self.options}
 
     def get_serializer_meta_class(self):
-
         return type(
             'DefaultMeta',
             (),
-            self.get_serializer_options(),
+            self.serializer_options,
         )
 
     def get_serializer_class(self):
