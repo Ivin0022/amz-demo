@@ -13,11 +13,16 @@ VIEWSET_OPTIONS = [
     'search_fields',
     'ordering_fields',
     'permission_classes',
+
+    # callable
+    'get_queryset',
+    'get_serializer_class',
 ]
 
 SERIALIZER_OPTIONS = [
     'model',
     'fields',
+    'read_only_fields',
     'depth',
 ]
 
