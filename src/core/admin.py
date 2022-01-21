@@ -28,10 +28,7 @@ class AdminModel:
         self.model = model
         self.meta: Options = self.model._meta
         self.fields = self.model._meta.fields
-        self.fk_fields = [
-            field for field in self.fields
-            if isinstance(field, models.ForeignKey)
-        ]
+        self.fk_fields = [field for field in self.fields if isinstance(field, models.ForeignKey)]
         self.field_names = [field.name for field in self.meta.fields]
 
     @property
@@ -43,21 +40,16 @@ class AdminModel:
     @property
     def search_fields(self):
         list_types = (models.CharField, models.TextField)
-        return [
-            field.name for field in self.fields
-            if isinstance(field, list_types)
-        ][:3]
+        return [field.name for field in self.fields if isinstance(field, list_types)][:3]
 
     def make(self):
 
         list_display = [field.name for field in self.fields]
-        filter_horizontal = [
-            field.name for field in self.meta.local_many_to_many
-        ]
+        filter_horizontal = [field.name for field in self.meta.local_many_to_many]
 
         return type(
             '%sAdmin' % self.model.__name__,
-            (admin.ModelAdmin, ),
+            (admin.ModelAdmin,),
             dict(
                 list_display=list_display,
                 filter_horizontal=filter_horizontal,

@@ -1,6 +1,7 @@
 # django
 from django.apps import apps
 from django.db.models.options import Options
+from django.db import models
 
 # rest framework
 from rest_framework.routers import DefaultRouter
@@ -9,10 +10,10 @@ from rest_framework.serializers import ModelSerializer
 
 VIEWSET_OPTIONS = [
     'pagination_class',
+    'permission_classes',
     'filterset_fields',
     'search_fields',
     'ordering_fields',
-    'permission_classes',
 
     # callable
     'get_queryset',
@@ -25,6 +26,36 @@ SERIALIZER_OPTIONS = [
     'read_only_fields',
     'depth',
 ]
+
+
+class SerializerOpitons:
+
+    def __init__(self, model) -> None:
+        self.model = model
+        self.fields = '__all__'
+
+
+class ViewSetOpitons:
+
+    def __init__(self, model) -> None:
+        self.model = model
+        self.meta: Options = self.model._meta
+        self.fields = self.meta.fields
+        self.fk_fields = [field for field in self.fields if isinstance(field, models.ForeignKey)]
+        self.field_names = [field.name for field in self.fields]
+
+    @property
+    def filterset_fields(self):
+        return
+
+    @property
+    def search_fields(self):
+        list_types = (models.CharField, models.TextField)
+        return [field.name for field in self.fields if isinstance(field, list_types)][:3]
+
+    @property
+    def ordering_fields(self):
+        return
 
 
 class AutoAPIView:
@@ -42,22 +73,24 @@ class AutoAPIView:
         meta: Options = model._meta
         return meta.model_name.title()
 
-    def get_API_options(self, model):
-        default_options = {
-            'model': model,
-            'fields': '__all__',
-        }
+    def get_API_options(self, model) -> dict:
         API = getattr(model, 'API', None)
-        options = getattr(API, '__dict__', {})
-
-        return {**default_options, **options}
+        return getattr(API, '__dict__', {})
 
     def get_serializer_options(self, model):
-        options = self.get_API_options(model)
+
+        default_options = SerializerOpitons(model).__dict__
+        options: dict = self.get_API_options(model)
+        options = {**default_options, **options}
+
         return {k: v for k, v in options.items() if k in SERIALIZER_OPTIONS}
 
     def get_viewset_options(self, model):
-        options = self.get_API_options(model)
+
+        default_options = ViewSetOpitons(model).__dict__
+        options: dict = self.get_API_options(model)
+        options = {**default_options, **options}
+
         return {k: v for k, v in options.items() if k in VIEWSET_OPTIONS}
 
     def get_serializer_meta_class(self, model):
@@ -83,7 +116,6 @@ class AutoAPIView:
             dict(
                 queryset=model.objects.all(),
                 serializer_class=self.get_serializer_class(model),
-                ordering_fields=[],
                 **self.get_viewset_options(model)
             ),
         )
