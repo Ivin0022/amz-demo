@@ -12,6 +12,7 @@ VIEWSET_OPTIONS = [
     'pagination_class',
     'permission_classes',
     'filterset_fields',
+    'filterset_class',
     'search_fields',
     'ordering_fields',
 
@@ -56,11 +57,11 @@ class ViewSetOpitons:
 
     @property
     def filterset_fields(self):
-        types = (models.ForeignKey,)
-        fk_field_names = self._get_field_names_for_type(types)
+        types = (models.ForeignKey, models.DateField, models.DateTimeField)
+        field_names = self._get_field_names_for_type(types)
         choices_field_names = self._get_choices_field_names()
 
-        return [*fk_field_names, *choices_field_names]
+        return [*field_names, *choices_field_names]
 
     @property
     def search_fields(self):
@@ -69,7 +70,8 @@ class ViewSetOpitons:
 
     @property
     def ordering_fields(self):
-        return []
+        types = (models.DateField, models.DateTimeField)
+        return self._get_field_names_for_type(types)
 
 
 class AutoAPIView:
