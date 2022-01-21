@@ -74,71 +74,70 @@ class ViewSetOpitons:
         return self._get_field_names_for_type(types)
 
 
-class AutoAPIView:
+class ModelAPI:
 
-    def __init__(self) -> None:
-        self.router = DefaultRouter()
-        self.models = [m for m in apps.get_models()]
+    def __init__(self, model) -> None:
+        self.model: models.Model = model
+        self.meta: Options = self.model._meta
+        self.api_name: str = self.meta.verbose_name_plural.lower().replace(' ', '/')
+        self.basename: str = self.api_name
+        self.model_name: str = self.meta.model_name.title()
+        self.API = getattr(self.model, 'API', None)
+        self.options: dict = getattr(self.API, '__dict__', {})
 
-    def get_api_name(self, model):
-        meta: Options = model._meta
-        name: str = meta.verbose_name_plural
-        return name.lower().replace(' ', '/')
+    def get_serializer_options(self):
 
-    def get_class_name(self, model):
-        meta: Options = model._meta
-        return meta.model_name.title()
-
-    def get_API_options(self, model) -> dict:
-        API = getattr(model, 'API', None)
-        return getattr(API, '__dict__', {})
-
-    def get_serializer_options(self, model):
-
-        default_options = SerializerOpitons(model)
+        default_options = SerializerOpitons(self.model)
         default_options = {k: getattr(default_options, k) for k in SERIALIZER_OPTIONS if hasattr(default_options, k)}
-        options: dict = self.get_API_options(model)
 
-        return {**default_options, **options}
+        return {**default_options, **self.options}
 
-    def get_viewset_options(self, model):
+    def get_viewset_options(self):
 
-        default_options = ViewSetOpitons(model)
+        default_options = ViewSetOpitons(self.model)
         default_options = {k: getattr(default_options, k) for k in VIEWSET_OPTIONS if hasattr(default_options, k)}
-        options: dict = self.get_API_options(model)
 
-        return {**default_options, **options}
+        return {**default_options, **self.options}
 
-    def get_serializer_meta_class(self, model):
+    def get_serializer_meta_class(self):
 
         return type(
             'DefaultMeta',
             (),
-            self.get_serializer_options(model),
+            self.get_serializer_options(),
         )
 
-    def get_serializer_class(self, model):
+    def get_serializer_class(self):
 
         return type(
-            f'{self.get_class_name(model)}Serializer',
+            f'{self.model_name}Serializer',
             (ModelSerializer,),
-            dict(Meta=self.get_serializer_meta_class(model),),
+            dict(Meta=self.get_serializer_meta_class(),),
         )
 
-    def get_viewset(self, model):
+    def get_viewset(self):
         return type(
-            f'{self.get_class_name(model)}ViewSet',
+            f'{self.model_name}ViewSet',
             (ModelViewSet,),
             dict(
-                queryset=model.objects.all(),
-                serializer_class=self.get_serializer_class(model),
-                **self.get_viewset_options(model)
+                queryset=self.model._default_manager.all(),
+                serializer_class=self.get_serializer_class(),
+                **self.get_viewset_options(),
             ),
         )
 
+
+class AutoAPIView:
+
+    def __init__(self) -> None:
+        self.router = DefaultRouter()
+        self.models = apps.get_models()
+
     @property
     def urls(self):
+
         for model in self.models:
-            viewset = self.get_viewset(model)
-            self.router.register(self.get_api_name(model), viewset)
+            _model = ModelAPI(model)
+            self.router.register(_model.api_name, _model.get_viewset(), _model.basename)
+
         return self.router.urls
