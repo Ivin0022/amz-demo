@@ -4,7 +4,12 @@ from django.db import models
 class Question(models.Model):
     """Model definition for Questions."""
 
+    class KIND(models.TextChoices):
+        TEXT = 't'
+        MCQ = 'm'
+
     title = models.CharField(max_length=50)
+    kind = models.CharField(max_length=1, choices=KIND.choices)
     text = models.TextField()
 
     class Meta:

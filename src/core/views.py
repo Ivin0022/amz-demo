@@ -44,18 +44,32 @@ class ViewSetOpitons:
         self.fk_fields = [field for field in self.fields if isinstance(field, models.ForeignKey)]
         self.field_names = [field.name for field in self.fields]
 
+    def _get_field_names_for_type(self, types):
+        return [field.name for field in self.fields if isinstance(field, types)]
+
+    def _get_fields_for_type(self, types):
+        return [field for field in self.fields if isinstance(field, types)]
+
+    def _get_choices_field_names(self):
+        fields = self._get_fields_for_type(models.CharField)
+        return [i.name for i in fields if getattr(i, 'choices', None)]
+
     @property
     def filterset_fields(self):
-        return
+        types = (models.ForeignKey,)
+        fk_field_names = self._get_field_names_for_type(types)
+        choices_field_names = self._get_choices_field_names()
+
+        return [*fk_field_names, *choices_field_names]
 
     @property
     def search_fields(self):
-        list_types = (models.CharField, models.TextField)
-        return [field.name for field in self.fields if isinstance(field, list_types)][:3]
+        types = (models.CharField, models.TextField)
+        return self._get_field_names_for_type(types)[:3]
 
     @property
     def ordering_fields(self):
-        return
+        return []
 
 
 class AutoAPIView:
@@ -79,19 +93,19 @@ class AutoAPIView:
 
     def get_serializer_options(self, model):
 
-        default_options = SerializerOpitons(model).__dict__
+        default_options = SerializerOpitons(model)
+        default_options = {k: getattr(default_options, k) for k in SERIALIZER_OPTIONS if hasattr(default_options, k)}
         options: dict = self.get_API_options(model)
-        options = {**default_options, **options}
 
-        return {k: v for k, v in options.items() if k in SERIALIZER_OPTIONS}
+        return {**default_options, **options}
 
     def get_viewset_options(self, model):
 
-        default_options = ViewSetOpitons(model).__dict__
+        default_options = ViewSetOpitons(model)
+        default_options = {k: getattr(default_options, k) for k in VIEWSET_OPTIONS if hasattr(default_options, k)}
         options: dict = self.get_API_options(model)
-        options = {**default_options, **options}
 
-        return {k: v for k, v in options.items() if k in VIEWSET_OPTIONS}
+        return {**default_options, **options}
 
     def get_serializer_meta_class(self, model):
 
