@@ -1,6 +1,6 @@
 # builtins
 from dataclasses import asdict, dataclass
-from typing import Union, Callable
+from typing import Union, Callable, List
 
 # django
 from django.apps import apps
@@ -17,8 +17,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.serializers import ModelSerializer
 
-FIELDS_OR_ALL = Union[str, list, tuple]
-FIELDS = Union[list, tuple]
+FIELDS_OR_ALL = Union[str, List, tuple]
+FIELDS = Union[List, tuple]
 
 VIEWSET_OPTIONS = [
     'pagination_class',
@@ -58,8 +58,8 @@ class SerializerOpitons(BaseOptions):
 class ViewSetOpitons(BaseOptions):
 
     queryset: models.QuerySet = None
-    pagination_class: list[BasePagination] = None
-    permission_classes: list[BasePermission] = None
+    pagination_class: List[BasePagination] = None
+    permission_classes: List[BasePermission] = None
     filterset_class: FilterSet = None
     filterset_fields: FIELDS = None
     search_fields: FIELDS = None
